@@ -2,6 +2,11 @@ import os
 import argparse
 import duckdb
 import time
+import sys
+
+# Adiciona o diretório raiz ao PYTHONPATH para importar configurações
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from config.settings import settings
 
 def process_enem_data(year: int):
     """
@@ -9,11 +14,11 @@ def process_enem_data(year: int):
     salva em formato Parquet no diretório processed.
     """
     raw_csv_path = os.path.join(
-        os.path.dirname(__file__), '..', '..', 'data', 'raw', 
+        os.path.abspath(settings.raw_data_dir), 
         f'enem_{year}', 'DADOS', f'MICRODADOS_ENEM_{year}.csv'
     )
     
-    processed_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'processed', f'enem_{year}')
+    processed_dir = os.path.join(os.path.abspath(settings.processed_data_dir), f'enem_{year}')
     os.makedirs(processed_dir, exist_ok=True)
     parquet_output_path = os.path.join(processed_dir, 'enem_processed.parquet')
 

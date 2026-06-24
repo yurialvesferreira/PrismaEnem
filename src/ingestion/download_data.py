@@ -3,6 +3,11 @@ import argparse
 import requests
 import zipfile
 from tqdm import tqdm
+import sys
+
+# Adiciona o diretório raiz ao PYTHONPATH para importar configurações
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from config.settings import settings
 
 def download_file(url: str, output_path: str):
     """Downloads a file with a progress bar."""
@@ -44,7 +49,7 @@ def main():
     default_url = f"https://download.inep.gov.br/microdados/microdados_enem_{year}.zip"
     url = args.url if args.url else default_url
 
-    raw_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'raw')
+    raw_dir = os.path.abspath(settings.raw_data_dir)
     os.makedirs(raw_dir, exist_ok=True)
 
     zip_filename = f"microdados_enem_{year}.zip"

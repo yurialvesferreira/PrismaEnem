@@ -2,6 +2,11 @@ import os
 import argparse
 import csv
 import random
+import sys
+
+# Adiciona o diretório raiz ao PYTHONPATH para importar configurações
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from config.settings import settings
 
 def create_mock_csv(year: int, num_rows: int, output_dir: str):
     """Cria um CSV com dados simulados do ENEM para testes locais do boilerplate."""
@@ -56,7 +61,7 @@ def main():
     args = parser.parse_args()
 
     # Salva na pasta data/raw dentro de uma pasta enem_{year}/DADOS (simulando a estrutura do zip do inep)
-    raw_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'raw', f'enem_{args.year}', 'DADOS')
+    raw_dir = os.path.join(os.path.abspath(settings.raw_data_dir), f'enem_{args.year}', 'DADOS')
     
     create_mock_csv(args.year, args.rows, raw_dir)
 

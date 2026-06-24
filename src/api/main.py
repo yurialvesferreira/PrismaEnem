@@ -3,6 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import duckdb
 import os
+import sys
+
+# Adiciona o diretório raiz ao PYTHONPATH para importar configurações
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from config.settings import settings
 
 app = FastAPI(
     title="PrismaEnem API",
@@ -25,7 +30,7 @@ def get_db_connection():
 
 def get_parquet_path(year: int):
     path = os.path.join(
-        os.path.dirname(__file__), '..', '..', 'data', 'processed', 
+        os.path.abspath(settings.processed_data_dir), 
         f'enem_{year}', 'enem_processed.parquet'
     )
     if not os.path.exists(path):
