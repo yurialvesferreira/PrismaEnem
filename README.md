@@ -165,6 +165,7 @@ PrismaEnem/
 │   └── settings.py
 ├── docs/                # Documentação adicional, diagramas de arquitetura
 │   └── boilerplate_architecture.png
+│   └── logo.png
 ├── .env.example         # Exemplo de variáveis de ambiente
 ├── requirements.txt     # Dependências Python
 ├── Dockerfile           # Dockerfile para conteinerização da aplicação
