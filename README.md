@@ -1,187 +1,235 @@
-# PrismaEnem: Desvendando os Microdados do ENEM
+# PrismaEnem — Microdados do ENEM, do Raw ao Dashboard
 
-![PrismaEnem Logo Placeholder](./docs/logo.png) <!-- Placeholder para uma logo criativa -->
+> **Boilerplate open-source de engenharia de dados educacionais:** ingestão, ETL com DuckDB, API FastAPI, Dashboard Next.js e análise exploratória com JupyterLab — tudo em um único `./quick_start.sh`.
+
+---
 
 ## ✨ Visão Geral
 
-O **PrismaEnem** é um boilerplate robusto e modular, projetado para transformar a complexidade dos microdados do Exame Nacional do Ensino Médio (ENEM) em um espectro de insights claros e acionáveis. Assim como um prisma decompõe a luz branca em suas cores constituintes, este projeto permite que desenvolvedores, cientistas de dados e pesquisadores desvendem o vasto universo de informações educacionais do Brasil, democratizando o acesso e a análise de dados.
+O **PrismaEnem** transforma a complexidade dos microdados do ENEM em insights claros e acionáveis. Assim como um prisma decompõe a luz branca em suas cores constituintes, este projeto permite que desenvolvedores, cientistas de dados, gestores escolares e pesquisadores desvendem o vasto universo de informações educacionais do Brasil.
 
-PrismaEnem oferece uma base sólida para construir aplicações que capturam, processam e analisam o desempenho educacional em larga escala. Seja para criar rankings de escolas, acompanhar tendências históricas ou aprofundar-se em análises socioeconômicas, o PrismaEnem é a sua ferramenta essencial.
+Este boilerplate foi construído com foco em **portabilidade**, **segurança by design** e **experiência "fork-and-run"**: qualquer pessoa deve conseguir clonar, executar um script e ter todo o ambiente funcional em minutos.
 
-## 🚀 Por Que Usar o PrismaEnem?
+---
 
-- **Acelere seu Projeto:** Inicie sua jornada de análise de dados do ENEM com uma infraestrutura pré-configurada e otimizada.
-- **Modularidade e Reuso:** Componentes bem definidos e desacoplados facilitam a adaptação e integração em diversos contextos.
-- **Escalabilidade:** Arquitetura pensada para lidar com o crescente volume de dados do ENEM, desde análises locais até ambientes distribuídos em nuvem.
-- **Comunidade Open Source:** Contribua, aprenda e colabore com uma comunidade engajada na melhoria da educação através dos dados.
-- **Insights Acionáveis:** Transforme dados brutos em informações estratégicas para gestores, educadores e pesquisadores.
-
-## 💡 Funcionalidades Principais
-
-O PrismaEnem oferece uma estrutura completa para:
-
-- **Ingestão Automatizada:** Scripts para download e extração eficiente dos arquivos ZIP dos microdados do INEP.
-- **Processamento ETL Robusto:** Pipelines de Extração, Transformação e Carga (ETL) para limpeza, padronização, enriquecimento e agregação de dados.
-- **Armazenamento Estruturado:** Organização de dados brutos em um Data Lake e dados processados em um Data Warehouse otimizado para consultas.
-- **API Exemplo:** Um esqueleto de API RESTful para expor dados agregados e facilitar a integração com outras aplicações.
-- **Frontend Básico:** Uma aplicação web de exemplo para visualização inicial de dados e demonstração de capacidades.
-
-## 🏗️ Arquitetura
-
-A arquitetura do PrismaEnem adota um modelo de Data Lakehouse, combinando a flexibilidade do armazenamento de dados brutos com a estrutura e performance de um Data Warehouse. Os principais componentes e o fluxo de dados são ilustrados abaixo:
-
-![Diagrama de Arquitetura do Boilerplate](./docs/boilerplate_architecture.png)
-
-### Componentes Chave:
-
-- **Fonte de Dados:** Instituto Nacional de Estudos e Pesquisas Educacionais Anísio Teixeira (INEP) - Microdados ENEM.
-- **Armazenamento Bruto (Data Lake):** Soluções de Cloud Storage (AWS S3, Google Cloud Storage) para arquivos ZIP e CSVs originais.
-- **Serviço de Ingestão:** Scripts Python orquestrados para automação do download e extração.
-- **Processamento de Dados:** Ferramentas como DuckDB/Polars (para ambientes single-node) ou Dask/Apache Spark (para processamento distribuído).
-- **Data Warehouse:** Google BigQuery (ou soluções similares como Snowflake, Amazon Redshift) para dados tratados e agregados.
-- **Motor de Análise:** DuckDB ou ClickHouse para consultas de baixa latência e dashboards interativos.
-- **Serviço de API:** Frameworks Python (FastAPI/Flask) ou Node.js (Express) para exposição de dados via API.
-- **Aplicação Frontend:** React (ou Vue.js, Angular) com bibliotecas de visualização (Chart.js, Mapbox GL JS) para interface do usuário.
-
-## 🛠️ Stack Tecnológico Recomendado
-
-| Camada / Componente         | Tecnologia Principal           | Alternativas / Complementos        |
-| :-------------------------- | :----------------------------- | :--------------------------------- |
-| **Ingestão**                | Python (`requests`, `zipfile`) | Airflow, Prefect, Dagster          |
-| **Armazenamento Bruto**     | AWS S3                         | Google Cloud Storage, Azure Blob   |
-| **Processamento (ETL)**     | DuckDB / Polars                | Dask, Apache Spark, Pandas (menor) |
-| **Data Warehouse**          | Google BigQuery                | Snowflake, Amazon Redshift         |
-| **Motor de Análise**        | DuckDB                         | ClickHouse, Apache Druid           |
-| **API**                     | Python (FastAPI)               | Node.js (Express), Go (Gin)        |
-| **Frontend**                | React + Tailwind CSS           | Vue.js, Angular                    |
-| **Visualização (Frontend)** | Chart.js, Mapbox GL JS         | D3.js, Recharts, Leaflet           |
-| **Orquestração**            | Docker Compose                 | Kubernetes, AWS ECS, GCP GKE       |
-
-## 🚀 Como Começar
-
-### Pré-requisitos
-
-Certifique-se de ter instalado em sua máquina:
-
-- [Python 3.8+](https://www.python.org/downloads/)
-- [Node.js](https://nodejs.org/en/download/) (para o desenvolvimento do frontend)
-- [Docker e Docker Compose](https://docs.docker.com/get-docker/) (altamente recomendado para um ambiente de desenvolvimento consistente)
-
-### Instalação
-
-1.  **Clone o repositório:**
-
-    ```bash
-    git clone https://github.com/yurialvesferreira/PrismaEnem.git
-    cd PrismaEnem
-    ```
-
-2.  **Configuração do Ambiente Python:**
-
-    ```bash
-    python -m venv venv
-    source venv/bin/activate # No Windows: .\venv\Scripts\activate
-    pip install -r requirements.txt
-    ```
-
-3.  **Configuração do Ambiente Frontend (Opcional):**
-    Se você planeja trabalhar com o frontend, navegue até o diretório e instale as dependências:
-
-    ```bash
-    cd src/frontend
-    npm install # ou yarn install
-    cd ../..
-    ```
-
-4.  **Variáveis de Ambiente:**
-    Crie um arquivo `.env` na raiz do projeto, baseado no `.env.example`, e preencha com suas credenciais e configurações. Exemplo:
-
-    ```ini
-    # INEP Data Source
-    INEP_DATA_URL_BASE=https://download.inep.gov.br/microdados/
-
-    # AWS S3 (se aplicável)
-    AWS_ACCESS_KEY_ID=SEU_ACCESS_KEY
-    AWS_SECRET_ACCESS_KEY=SEU_SECRET_KEY
-    AWS_REGION=us-east-1
-
-    # Google BigQuery (se aplicável)
-    BIGQUERY_PROJECT_ID=SEU_PROJETO_BIGQUERY
-    ```
-
-### Uso Básico
-
-A forma mais rápida de rodar o projeto do zero é utilizando nosso script interativo que prepara o ambiente, gera dados mockados, os processa via DuckDB e inicia a infraestrutura com Docker.
+## 🚀 Quick Start (Fork & Run)
 
 ```bash
+git clone https://github.com/yurialvesferreira/PrismaEnem.git
+cd PrismaEnem
 chmod +x quick_start.sh
 ./quick_start.sh
 ```
 
-#### Execução Manual (Alternativa)
+O script cuida de tudo: gera dados mock do ENEM, processa via DuckDB, e sobe toda a infraestrutura com Docker.
 
-**1. Ingestão e Mock Data:**
-Para gerar dados de exemplo (ou usar o `download_data.py` para baixar do INEP):
-```bash
-python src/ingestion/mock_data.py --year 2023 --rows 5000
+| Serviço | URL | Descrição |
+|---------|-----|-----------|
+| **Dashboard** | http://localhost:3000 | Interface visual Dark Mode (Next.js + Chart.js) |
+| **API Docs** | http://localhost:8000/docs | Documentação interativa gerada pelo FastAPI |
+| **JupyterLab** | http://localhost:8888 | Análise exploratória dos dados processados |
+
+> **Token do JupyterLab:** definido pela variável `JUPYTER_TOKEN` no seu `.env` (padrão: `prisma_secret_token_123`).
+
+---
+
+## 💡 Funcionalidades Principais
+
+| Camada | O que faz |
+|--------|-----------|
+| **Ingestão** | Download automatizado dos ZIPs do INEP **ou** geração de dados mock para testes sem baixar ~4GB |
+| **ETL (DuckDB)** | Pipeline de transformação que lê os CSVs brutos e gera arquivos `.parquet` otimizados para consultas analíticas |
+| **API (FastAPI)** | Endpoints REST para estatísticas nacionais e ranking por estado, com documentação automática em `/docs` |
+| **Dashboard (Next.js)** | Interface Dark Mode com comparativo da sua escola vs. média nacional e ranking de UFs via Chart.js |
+| **JupyterLab** | Container pronto para análise exploratória nos Parquets gerados, sem configuração adicional |
+
+---
+
+## 🏗️ Arquitetura
+
+O PrismaEnem adota o modelo **Data Lakehouse local**:
+
+```
+INEP (ZIP/CSV)
+     │
+     ▼
+[data/raw/]           ← Dados brutos (ignorados pelo Git)
+     │
+     ▼
+DuckDB ETL            ← process_data.py transforma e agrega
+     │
+     ▼
+[data/processed/]     ← Arquivos .parquet (ignorados pelo Git)
+     │
+     ▼
+FastAPI               ← Lê os Parquets, expõe via REST
+     │
+     ▼
+Next.js Dashboard     ← Consome a API, renderiza visualizações
 ```
 
-**2. Processamento de Dados (ETL):**
-Gera o arquivo Parquet otimizado com DuckDB:
-```bash
-python src/processing/process_data.py --year 2023
-```
+**Por que DuckDB + Parquet?**
+- DuckDB executa queries analíticas in-process, sem servidor — ideal para ambientes single-node.
+- Parquet reduz o tamanho dos dados em até 10x comparado ao CSV e acelera queries em colunas específicas.
 
-**3. Executando a API e Frontend:**
-Use o Docker Compose para subir todo o ambiente (API FastAPI, Next.js e JupyterLab):
-```bash
-docker-compose up --build
-```
-Acesse:
-- **Dashboard Frontend:** http://localhost:3000
-- **API Docs:** http://localhost:8000/docs
-- **JupyterLab:** http://localhost:8888/lab?token=prisma
+---
+
+## 🛠️ Stack Tecnológico
+
+| Camada | Tecnologia implementada | Possíveis substituições |
+|--------|------------------------|-------------------------|
+| **Ingestão** | Python (`requests`, `zipfile`) | Airflow, Prefect, Dagster |
+| **Armazenamento Bruto** | Disco local (`data/raw/`) | AWS S3, Google Cloud Storage |
+| **Processamento (ETL)** | DuckDB + Polars | Dask, Apache Spark |
+| **Armazenamento Processado** | Parquet local (`data/processed/`) | BigQuery, Redshift, Snowflake |
+| **API** | FastAPI + Uvicorn | Flask, Django REST, Go Gin |
+| **Frontend** | Next.js + Tailwind CSS + Chart.js | React (CRA), Vue.js |
+| **Notebooks** | JupyterLab | VS Code Notebooks |
+| **Orquestração** | Docker Compose | Kubernetes, AWS ECS |
+| **Config Management** | Pydantic Settings + `.env` | — |
+
+---
 
 ## 📂 Estrutura do Projeto
 
 ```text
 PrismaEnem/
 ├── data/
-│   ├── raw/             # Microdados originais ou mocks CSV
-│   └── processed/       # Dados transformados (.parquet) gerados pelo DuckDB
+│   ├── raw/                  # Microdados originais ou mocks CSV (não versionados)
+│   └── processed/            # Arquivos .parquet gerados pelo DuckDB (não versionados)
+│
 ├── src/
-│   ├── ingestion/       # Scripts para captura (download_data.py, mock_data.py)
-│   ├── processing/      # Pipelines ETL em DuckDB (process_data.py)
-│   ├── api/             # API construída com FastAPI consumindo o Parquet
-│   └── frontend/        # Dashboard Gestor Escolar em Next.js, React e Tailwind
+│   ├── ingestion/
+│   │   ├── download_data.py  # Download dos ZIPs do INEP com barra de progresso
+│   │   └── mock_data.py      # Gerador de dados simulados para testes offline
+│   ├── processing/
+│   │   └── process_data.py   # Pipeline ETL: CSV → DuckDB → Parquet
+│   ├── api/
+│   │   └── main.py           # API FastAPI com endpoints /stats e /states
+│   └── frontend/
+│       ├── .env.local.example # Template de variáveis para o Next.js
 │       └── src/
-│           ├── app/     # Rotas Next.js App Router (page.tsx)
-│           └── components/ # Componentes UI isolados (Chart.tsx)
-├── config/              # Central de configurações e paths (settings.py)
-├── docs/                # Assets da documentação
-├── quick_start.sh       # Script de inicialização rápida end-to-end
-├── docker-compose.yml   # Orquestração (API + Frontend + JupyterLab)
-├── Dockerfile           # Imagem para rodar a API
-├── requirements.txt     # Dependências PyPI
-└── README.md            # Este arquivo
+│           ├── app/           # Rotas Next.js App Router (page.tsx — Dashboard)
+│           └── components/    # Componentes UI reutilizáveis (Chart.tsx)
+│
+├── config/
+│   └── settings.py           # Central de configurações via Pydantic + .env
+│
+├── docs/                      # Assets de documentação
+├── quick_start.sh             # Script end-to-end: mock → ETL → Docker up
+├── docker-compose.yml         # Orquestra API + Frontend + JupyterLab
+├── Dockerfile                 # Multi-stage build para a API (non-root)
+├── requirements.txt           # Dependências Python
+├── .env.example               # Template de variáveis de ambiente
+├── .gitignore                 # Protege .env e dados brutos de serem commitados
+├── SECURITY.md                # Política de segurança e decisões arquiteturais
+└── README.md                  # Este arquivo
 ```
+
+---
+
+## ⚙️ Configuração
+
+### Variáveis de Ambiente
+
+Copie o `.env.example` e ajuste conforme necessário:
+
+```bash
+cp .env.example .env
+```
+
+As variáveis mais relevantes:
+
+```ini
+# Caminhos dos dados (relativos à raiz do projeto)
+DATA_DIR=./data
+RAW_DATA_DIR=./data/raw
+PROCESSED_DATA_DIR=./data/processed
+
+# URL base dos microdados do INEP
+INEP_DATA_URL_BASE=https://download.inep.gov.br/microdados/
+
+# CORS — em produção, restrinja ao seu domínio
+# CORS_ORIGINS=["https://meusite.com.br"]
+
+# JupyterLab — altere para um token seguro em produção
+JUPYTER_TOKEN=prisma_secret_token_123
+
+# Next.js — URL da API consumida pelo Dashboard
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+```
+
+### Frontend local (sem Docker)
+
+```bash
+cd src/frontend
+cp .env.local.example .env.local
+npm install
+npm run dev
+```
+
+---
+
+## 🔧 Uso Manual (Alternativa ao quick_start.sh)
+
+**1. Gerar dados mock (sem baixar do INEP):**
+```bash
+python src/ingestion/mock_data.py --year 2023 --rows 5000
+```
+
+**2. Baixar dados reais do INEP (~4 GB):**
+```bash
+python src/ingestion/download_data.py --year 2023
+```
+
+**3. Processar os dados (CSV → Parquet via DuckDB):**
+```bash
+python src/processing/process_data.py --year 2023
+```
+
+**4. Subir toda a infraestrutura:**
+```bash
+docker-compose up --build
+```
+
+---
+
+## 🔒 Segurança
+
+O PrismaEnem foi construído com **segurança by design**. Entre as medidas implementadas:
+
+- ✅ **Sem SQL Injection:** queries DuckDB usam o padrão View Registration + bind parameters (`?`) — nenhuma variável externa é interpolada em SQL.
+- ✅ **Sem Information Disclosure:** erros internos são logados no servidor, o cliente recebe apenas mensagens genéricas.
+- ✅ **CORS restritivo:** origens permitidas configuráveis via `.env`, sem `"*"` hardcoded.
+- ✅ **Docker non-root:** container roda como `prismauser` (sem shell, sem home) em imagem multi-stage.
+- ✅ **Secrets protegidos:** `.env` e dados brutos nunca são commitados (`.gitignore` rigoroso).
+
+Para o relatório completo, consulte o [`SECURITY.md`](./SECURITY.md).
+
+---
 
 ## 🤝 Contribuição
 
-Contribuições são o coração de projetos open-source! Se você tem ideias, melhorias ou encontrou um bug, sinta-se à vontade para contribuir. Siga os passos:
+Contribuições são bem-vindas! Para contribuir:
 
-1.  Faça um fork do repositório.
-2.  Crie uma nova branch para sua feature (`git checkout -b feature/minha-nova-feature`).
-3.  Implemente suas mudanças e adicione testes relevantes.
-4.  Garanta que todos os testes passem e que o código siga as diretrizes de estilo.
-5.  Faça commit das suas mudanças (`git commit -m 'feat: Adiciona funcionalidade X para Y'`).
-6.  Envie para a sua branch (`git push origin feature/minha-nova-feature`).
-7.  Abra um Pull Request detalhando suas alterações e o problema que ele resolve.
+1. Faça um fork do repositório.
+2. Crie uma branch para sua feature: `git checkout -b feature/minha-feature`
+3. Implemente e documente suas mudanças.
+4. Faça commit seguindo o padrão Conventional Commits: `git commit -m 'feat: adiciona suporte ao ano X'`
+5. Abra um Pull Request descrevendo o problema resolvido e o impacto da mudança.
+
+> Encontrou uma vulnerabilidade de segurança? **Não abra uma issue pública.** Consulte as instruções de responsible disclosure no [`SECURITY.md`](./SECURITY.md).
+
+---
 
 ## 🔗 Referências
 
-- **Microdados ENEM - Portal Gov.br:**
-  [https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/microdados/enem](https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/microdados/enem)
+- [Microdados ENEM — Portal Gov.br](https://www.gov.br/inep/pt-br/acesso-a-informacao/dados-abertos/microdados/enem)
+- [DuckDB Documentation](https://duckdb.org/docs/)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Next.js Documentation](https://nextjs.org/docs)
+
+---
 
 ## 📄 Licença
 
