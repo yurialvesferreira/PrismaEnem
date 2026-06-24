@@ -111,64 +111,58 @@ Certifique-se de ter instalado em sua máquina:
 
 ### Uso Básico
 
-#### 1. Ingestão de Dados
-
-Para baixar e extrair os microdados de um ano específico (ex: 2023):
+A forma mais rápida de rodar o projeto do zero é utilizando nosso script interativo que prepara o ambiente, gera dados mockados, os processa via DuckDB e inicia a infraestrutura com Docker.
 
 ```bash
-python src/ingestion/download_data.py --year 2023
+chmod +x quick_start.sh
+./quick_start.sh
 ```
 
-#### 2. Processamento de Dados
+#### Execução Manual (Alternativa)
 
-Após a ingestão, processe os dados brutos para gerar os dados tratados e agregados:
+**1. Ingestão e Mock Data:**
+Para gerar dados de exemplo (ou usar o `download_data.py` para baixar do INEP):
+```bash
+python src/ingestion/mock_data.py --year 2023 --rows 5000
+```
 
+**2. Processamento de Dados (ETL):**
+Gera o arquivo Parquet otimizado com DuckDB:
 ```bash
 python src/processing/process_data.py --year 2023
 ```
 
-#### 3. Executando a API (Exemplo)
-
-Inicie o servidor da API (no diretório `src/api`):
-
+**3. Executando a API e Frontend:**
+Use o Docker Compose para subir todo o ambiente (API FastAPI, Next.js e JupyterLab):
 ```bash
-cd src/api
-uvicorn main:app --reload
+docker-compose up --build
 ```
-
-#### 4. Executando o Frontend (Exemplo)
-
-Inicie a aplicação frontend (no diretório `src/frontend`):
-
-```bash
-cd src/frontend
-npm start # ou yarn start
-```
+Acesse:
+- **Dashboard Frontend:** http://localhost:3000
+- **API Docs:** http://localhost:8000/docs
+- **JupyterLab:** http://localhost:8888/lab?token=prisma
 
 ## 📂 Estrutura do Projeto
 
-```
+```text
 PrismaEnem/
 ├── data/
-│   ├── raw/             # Microdados ZIPs e CSVs brutos do INEP
-│   └── processed/       # Dados processados, limpos e agregados (e.g., Parquet)
+│   ├── raw/             # Microdados originais ou mocks CSV
+│   └── processed/       # Dados transformados (.parquet) gerados pelo DuckDB
 ├── src/
-│   ├── ingestion/       # Módulo de Ingestão: Scripts para download e extração
-│   │   └── download_data.py
-│   ├── processing/      # Módulo de Processamento: Scripts para ETL e transformação
-│   │   └── process_data.py
-│   ├── api/             # Módulo de API: Código da API (FastAPI/Flask)
-│   │   └── main.py
-│   └── frontend/        # Módulo Frontend: Código da aplicação web (React)
-│       └── App.js
-├── config/              # Arquivos de configuração do projeto
-│   └── settings.py
-├── docs/                # Documentação adicional, diagramas de arquitetura
-│   └── boilerplate_architecture.png
-│   └── logo.png
-├── .env.example         # Exemplo de variáveis de ambiente
-├── requirements.txt     # Dependências Python
-├── Dockerfile           # Dockerfile para conteinerização da aplicação
+│   ├── ingestion/       # Scripts para captura (download_data.py, mock_data.py)
+│   ├── processing/      # Pipelines ETL em DuckDB (process_data.py)
+│   ├── api/             # API construída com FastAPI consumindo o Parquet
+│   └── frontend/        # Dashboard Gestor Escolar em Next.js, React e Tailwind
+│       └── src/
+│           ├── app/     # Rotas Next.js App Router (page.tsx)
+│           └── components/ # Componentes UI isolados (Chart.tsx)
+├── config/              # Central de configurações e paths (settings.py)
+├── docs/                # Assets da documentação
+├── quick_start.sh       # Script de inicialização rápida end-to-end
+├── docker-compose.yml   # Orquestração (API + Frontend + JupyterLab)
+├── Dockerfile           # Imagem para rodar a API
+├── requirements.txt     # Dependências PyPI
 └── README.md            # Este arquivo
 ```
 
