@@ -15,10 +15,10 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Adiciona CORS para permitir acesso do frontend
+# Adiciona CORS para permitir acesso restrito do frontend (configurado no settings.py)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Permitir de qualquer origem em ambiente de dev
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

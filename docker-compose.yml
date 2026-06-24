@@ -38,5 +38,5 @@ services:
       - .:/home/jovyan/work
     environment:
       - JUPYTER_ENABLE_LAB=yes
-      - JUPYTER_TOKEN=prisma
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-prisma_secret_token_123}
     restart: unless-stopped
