@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: prisma_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - DATA_DIR=/app/data
+      - PYTHONPATH=/app
+    restart: unless-stopped
+
+  frontend:
+    image: node:20-alpine
+    container_name: prisma_frontend
+    working_dir: /app/src/frontend
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+    depends_on:
+      - api
+
+  jupyter:
+    image: jupyter/scipy-notebook:latest
+    container_name: prisma_jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/home/jovyan/work
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=prisma
+    restart: unless-stopped
