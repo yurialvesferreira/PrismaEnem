@@ -10,8 +10,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Adiciona um usuário não-root para rodar a aplicação com segurança
+RUN useradd -m prismauser && chown -R prismauser:prismauser /app
+USER prismauser
+
 # O código-fonte será montado via volume no docker-compose para fins de desenvolvimento.
 # Para produção, você deve descomentar a linha abaixo.
 # COPY . .
 
-CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
