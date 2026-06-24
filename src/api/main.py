@@ -67,6 +67,17 @@ def read_root():
 def health_check():
     return {"status": "ok"}
 
+def _register_parquet_view(con: duckdb.DuckDBPyConnection, parquet_path: str, view_name: str) -> None:
+    """
+    Registra o arquivo Parquet como uma view no DuckDB.
+    O caminho é passado como parâmetro bind (?), eliminando qualquer risco de injeção.
+    O view_name é um literal fixo controlado pelo código, nunca um input do usuário.
+    """
+    # A função read_parquet não aceita bind params nativos para o path,
+    # portanto usamos o método de registro de view do próprio duckdb,
+    # que aceita um objeto Python diretamente sem interpolar SQL.
+    con.execute(f"CREATE OR REPLACE VIEW {view_name} AS SELECT * FROM read_parquet(?)", [parquet_path])
+
 @app.get("/api/v1/enem/{year}/stats", response_model=StatsResponse)
 def get_enem_stats(year: int):
     """Retorna estatísticas gerais do ENEM para um ano específico."""
@@ -76,13 +87,15 @@ def get_enem_stats(year: int):
 
     try:
         con = get_db_connection()
-        query = f"""
+        _register_parquet_view(con, parquet_path, "enem_data")
+        # Query usa apenas o nome da view (literal fixo), sem interpolação de variáveis externas
+        query = """
             SELECT 
                 COUNT(*) as total_inscritos,
                 AVG(CAST(MEDIA_GERAL AS FLOAT)) as media_geral,
                 AVG(CAST(NU_NOTA_REDACAO AS FLOAT)) as media_redacao,
                 AVG(CAST(NU_NOTA_MT AS FLOAT)) as media_matematica
-            FROM read_parquet('{parquet_path}')
+            FROM enem_data
             WHERE MEDIA_GERAL > 0
         """
         result = con.execute(query).fetchone()
@@ -106,21 +119,20 @@ def get_enem_states_ranking(year: int, limit: int = Query(10, description="Núme
 
     try:
         con = get_db_connection()
-        query = f"""
+        _register_parquet_view(con, parquet_path, "enem_data")
+        # Query usa apenas o nome da view e bind param para LIMIT — sem interpolação externa
+        query = """
             SELECT 
                 SG_UF_ESC as uf,
                 AVG(CAST(MEDIA_GERAL AS FLOAT)) as media,
                 COUNT(*) as total_alunos
-            FROM read_parquet('{parquet_path}')
+            FROM enem_data
             WHERE SG_UF_ESC IS NOT NULL AND MEDIA_GERAL > 0
             GROUP BY SG_UF_ESC
             ORDER BY media DESC
             LIMIT ?
         """
-        # Usando bind parameters (?) para injetar o LIMIT de forma segura
         df = con.execute(query, [limit]).df()
-        
-        # Converte o DataFrame do pandas para uma lista de dicionários
         return df.to_dict(orient="records")
     except Exception as e:
         logger.error(f"Erro interno ao consultar states do ano {year} com limit {limit}: {str(e)}")
