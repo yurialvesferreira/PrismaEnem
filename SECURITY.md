@@ -18,17 +18,17 @@ Este documento descreve as decisões de segurança implementadas no boilerplate 
 
 **Vetor:** Injeção de variáveis externas em queries SQL via f-strings.
 
-**Solução adotada — DuckDB View Registration Pattern:**
+**Solução adotada — DuckDB Relational API + Registro de View:**
 
-O caminho do arquivo Parquet (`parquet_path`) é registrado como uma view usando **bind parameters nativos** do DuckDB, nunca interpolado diretamente em uma string SQL:
+O caminho do arquivo Parquet (`parquet_path`) entra pela **API relacional do Python** do DuckDB — como argumento de função, nunca interpolado em uma string SQL. (Nota: DDL como `CREATE VIEW` não aceita prepared parameters no DuckDB, então o bind param `?` não é uma opção aqui.)
 
 ```python
-# ✅ SEGURO — parquet_path é bind param (?), nunca concatenado em SQL
-con.execute("CREATE OR REPLACE VIEW enem_data AS SELECT * FROM read_parquet(?)", [parquet_path])
+# ✅ SEGURO — o caminho é argumento Python, nunca concatenado em SQL
+con.register("enem_data", con.read_parquet(parquet_path))
 
 # As queries subsequentes referenciam apenas o nome da view (literal fixo no código)
 query = "SELECT ... FROM enem_data WHERE ..."
-con.execute(query, [limit])  # limit também via bind param
+con.execute(query, [limit])  # limit via bind param
 ```
 
 **Por que não é suficiente apenas validar o tipo?** O FastAPI valida que `year` e `limit` são inteiros, mas a prática de construir queries com f-strings cria uma dependência frágil de validação — um padrão que se propaga de forma insegura em forks. O bind param elimina o risco by design.
@@ -139,12 +139,14 @@ data/processed/*
 !data/processed/.gitkeep
 ```
 
-O token do JupyterLab é lido do `.env` em runtime:
+O token do JupyterLab é lido do `.env` em runtime — **sem fallback hardcoded**; o compose falha se a variável não estiver definida, e o `quick_start.sh` gera um token aleatório automaticamente:
 
 ```yaml
 # docker-compose.yml
-- JUPYTER_TOKEN=${JUPYTER_TOKEN:-prisma_secret_token_123}
+- JUPYTER_TOKEN=${JUPYTER_TOKEN:?Defina JUPYTER_TOKEN no arquivo .env}
 ```
+
+Além disso, o container do JupyterLab (imagem de terceiros) monta **apenas o diretório `./data`**, nunca o repositório inteiro — o `.env` e o código-fonte não ficam expostos dentro dele.
 
 ---
 

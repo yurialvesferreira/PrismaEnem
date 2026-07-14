@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   api:
     build:
@@ -13,6 +11,12 @@ services:
     environment:
       - DATA_DIR=/app/data
       - PYTHONPATH=/app
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   frontend:
@@ -35,8 +39,10 @@ services:
     ports:
       - "8888:8888"
     volumes:
-      - .:/home/jovyan/work
+      # Monta apenas os dados — nunca o repositório inteiro (que inclui o .env com segredos)
+      - ./data:/home/jovyan/work/data
     environment:
       - JUPYTER_ENABLE_LAB=yes
-      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-prisma_secret_token_123}
+      # Sem fallback hardcoded: defina JUPYTER_TOKEN no .env (o quick_start.sh gera um automaticamente)
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:?Defina JUPYTER_TOKEN no arquivo .env}
     restart: unless-stopped

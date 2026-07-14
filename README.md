@@ -29,7 +29,7 @@ O script cuida de tudo: gera dados mock do ENEM, processa via DuckDB, e sobe tod
 | **API Docs** | http://localhost:8000/docs | Documentação interativa gerada pelo FastAPI |
 | **JupyterLab** | http://localhost:8888 | Análise exploratória dos dados processados |
 
-> **Token do JupyterLab:** definido pela variável `JUPYTER_TOKEN` no seu `.env` (padrão: `prisma_secret_token_123`).
+> **Token do JupyterLab:** definido pela variável `JUPYTER_TOKEN` no seu `.env`. O `quick_start.sh` gera um token aleatório automaticamente e exibe a URL de acesso completa ao final.
 
 ---
 
@@ -39,7 +39,7 @@ O script cuida de tudo: gera dados mock do ENEM, processa via DuckDB, e sobe tod
 |--------|-----------|
 | **Ingestão** | Download automatizado dos ZIPs do INEP **ou** geração de dados mock para testes sem baixar ~4GB |
 | **ETL (DuckDB)** | Pipeline de transformação que lê os CSVs brutos e gera arquivos `.parquet` otimizados para consultas analíticas |
-| **API (FastAPI)** | Endpoints REST para estatísticas nacionais e ranking por estado, com documentação automática em `/docs` |
+| **API (FastAPI)** | Endpoints REST para anos disponíveis (`/years`), estatísticas nacionais (`/stats`) e ranking por estado (`/states`), com documentação automática em `/docs` |
 | **Dashboard (Next.js)** | Interface Dark Mode com comparativo da sua escola vs. média nacional e ranking de UFs via Chart.js |
 | **JupyterLab** | Container pronto para análise exploratória nos Parquets gerados, sem configuração adicional |
 
@@ -152,8 +152,8 @@ INEP_DATA_URL_BASE=https://download.inep.gov.br/microdados/
 # CORS — em produção, restrinja ao seu domínio
 # CORS_ORIGINS=["https://meusite.com.br"]
 
-# JupyterLab — altere para um token seguro em produção
-JUPYTER_TOKEN=prisma_secret_token_123
+# JupyterLab — obrigatório; o quick_start.sh gera um token aleatório automaticamente
+JUPYTER_TOKEN=troque_por_um_token_seguro
 
 # Next.js — URL da API consumida pelo Dashboard
 NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1

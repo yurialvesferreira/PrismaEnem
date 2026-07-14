@@ -65,7 +65,22 @@ export default function Chart({ data, options }: ChartProps) {
     }
   };
 
-  const finalOptions = { ...defaultOptions, ...options };
+  // Merge por seção: um override pontual (ex: scales.y.max) não deve
+  // descartar todo o tema padrão de eixos, legendas e tooltips.
+  const finalOptions: ChartOptions<"bar"> = {
+    ...defaultOptions,
+    ...options,
+    plugins: {
+      ...defaultOptions.plugins,
+      ...options?.plugins,
+    },
+    // Cast necessário: o spread de uniões de tipos de escala do Chart.js
+    // não é reduzível pelo TypeScript, mas a estrutura resultante é válida.
+    scales: {
+      y: { ...defaultOptions.scales?.y, ...options?.scales?.y },
+      x: { ...defaultOptions.scales?.x, ...options?.scales?.x },
+    } as ChartOptions<"bar">["scales"],
+  };
 
   return <Bar data={data} options={finalOptions} />;
 }
