@@ -13,3 +13,7 @@ pyarrow>=14.0.0
 requests>=2.31.0
 python-dotenv>=1.0.0
 tqdm>=4.66.0
+
+# Dev / Testes
+pytest>=8.0.0
+httpx>=0.27.0

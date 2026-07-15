@@ -60,17 +60,23 @@ O type hint `int` do FastAPI já mitiga a maioria dos ataques, mas as camadas ad
 
 **Vetor:** `detail=str(e)` retornando stack traces, caminhos de arquivos ou estrutura interna do banco ao cliente.
 
-**Solução adotada:**
+**Solução adotada — Exception handler global:**
+
+A camada de repositório converte qualquer falha interna em uma exceção de domínio (`DataQueryError`), e um handler global centraliza o contrato de erro — nenhum endpoint precisa repetir `try/except`, e nenhum endpoint futuro pode "esquecer" o padrão:
 
 ```python
-except Exception as e:
+@app.exception_handler(DataQueryError)
+async def data_query_error_handler(request: Request, exc: DataQueryError):
     # Log completo internamente para debugging
-    logger.error(f"Erro interno ao consultar stats do ano {year}: {str(e)}")
+    logger.error("Erro interno ao consultar dados: %s", exc, exc_info=exc)
     # Mensagem genérica e segura para o cliente
-    raise HTTPException(status_code=500, detail="Erro interno do servidor ao processar os dados.")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Erro interno do servidor ao processar os dados."},
+    )
 ```
 
-O cliente nunca recebe informações do sistema. Os logs internos ficam disponíveis apenas nos logs do container (`docker logs prisma_api`).
+O cliente nunca recebe informações do sistema. Os logs internos ficam disponíveis apenas nos logs do container (`docker logs prisma_api`). O comportamento é coberto por teste automatizado (`tests/test_api.py::test_internal_error_returns_generic_500`).
 
 ---
 

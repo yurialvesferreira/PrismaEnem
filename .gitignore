@@ -48,6 +48,9 @@ data/processed/*
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# Testes
+.pytest_cache/
+
 # VS Code / IDEs
 .vscode/
 .idea/

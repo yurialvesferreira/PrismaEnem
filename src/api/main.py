@@ -1,10 +1,10 @@
-from contextlib import contextmanager
-from typing import Annotated, Iterator
+from dataclasses import asdict
+from typing import Annotated
 
-from fastapi import FastAPI, HTTPException, Path, Query
+from fastapi import Depends, FastAPI, Path, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-import duckdb
 import os
 import sys
 import logging
@@ -16,12 +16,21 @@ logger = logging.getLogger(__name__)
 # Adiciona o diretório raiz ao PYTHONPATH para importar configurações
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 from config.settings import settings
+from src.api.repository import (
+    MAX_UF_LIMIT,
+    DataQueryError,
+    DatasetNotFoundError,
+    EnemRepository,
+)
 
 MIN_YEAR = 1998
 MAX_YEAR = 2100
-PARQUET_FILENAME = "enem_processed.parquet"
-# 26 estados + DF
-MAX_UF_LIMIT = 27
+
+# Os agregados são imutáveis entre execuções do ETL — clientes e proxies podem
+# cacheá-los com segurança. A lista de anos muda quando um novo ETL roda,
+# então recebe um TTL curto.
+CACHE_CONTROL_DATA = "public, max-age=3600"
+CACHE_CONTROL_YEARS = "public, max-age=60"
 
 NOT_FOUND_RESPONSE = {404: {"description": "Dados processados do ano não encontrados."}}
 ERROR_RESPONSES = {
@@ -46,38 +55,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-def get_parquet_path(year: int) -> str:
-    """Resolve o caminho do Parquet processado ou levanta 404."""
-    processed_root = os.path.abspath(settings.processed_data_dir)
-    path = os.path.join(processed_root, f'enem_{year}', PARQUET_FILENAME)
-
-    # Path Traversal Prevention (já mitigado pelo type hint 'int', mas explicitado aqui)
-    if not os.path.abspath(path).startswith(processed_root + os.sep):
-        logger.error(f"Path Traversal detectado: {path}")
-        raise HTTPException(status_code=404, detail=f"Dados processados do ano {year} não encontrados.")
-
-    if not os.path.exists(path):
-        raise HTTPException(status_code=404, detail=f"Dados processados do ano {year} não encontrados.")
-    return path
+_repository = EnemRepository(settings.processed_data_dir)
 
 
-@contextmanager
-def enem_connection(parquet_path: str) -> Iterator[duckdb.DuckDBPyConnection]:
-    """
-    Abre uma conexão DuckDB efêmera com o Parquet registrado como a view 'enem_data'.
-    O caminho entra pela API relacional do Python (nunca interpolado em SQL),
-    eliminando qualquer risco de injeção, e a conexão é sempre fechada ao final.
-    """
-    con = duckdb.connect(database=':memory:')
-    try:
-        # DDL (CREATE VIEW) não aceita prepared parameters no DuckDB; a API
-        # relacional recebe o caminho como argumento Python, sem passar por SQL.
-        con.register("enem_data", con.read_parquet(parquet_path))
-        yield con
-    finally:
-        con.close()
+def get_repository() -> EnemRepository:
+    """Dependência injetável — substituível nos testes via app.dependency_overrides."""
+    return _repository
 
+
+RepositoryDep = Annotated[EnemRepository, Depends(get_repository)]
+
+
+# --- Exception handlers globais -------------------------------------------
+# Centralizam o contrato de erro da API: endpoints não repetem try/except e
+# nenhum detalhe interno (stack trace, caminhos) vaza para o cliente.
+
+@app.exception_handler(DatasetNotFoundError)
+async def dataset_not_found_handler(request: Request, exc: DatasetNotFoundError):
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(DataQueryError)
+async def data_query_error_handler(request: Request, exc: DataQueryError):
+    # Log completo internamente para debugging; mensagem genérica para o cliente
+    logger.error("Erro interno ao consultar dados: %s", exc, exc_info=exc)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Erro interno do servidor ao processar os dados."},
+    )
+
+
+# --- Modelos de resposta ----------------------------------------------------
 
 class StatsResponse(BaseModel):
     total_inscritos: int
@@ -96,6 +104,8 @@ class YearsResponse(BaseModel):
     years: list[int]
 
 
+# --- Rotas -------------------------------------------------------------------
+
 @app.get("/")
 def read_root():
     return {"message": "Bem-vindo à PrismaEnem API! Acesse /docs para ver a documentação."}
@@ -107,77 +117,31 @@ def health_check():
 
 
 @app.get("/api/v1/enem/years", response_model=YearsResponse)
-def list_available_years():
+def list_available_years(repo: RepositoryDep, response: Response):
     """Lista os anos com dados processados disponíveis para consulta."""
-    processed_root = os.path.abspath(settings.processed_data_dir)
-    years: list[int] = []
-    if os.path.isdir(processed_root):
-        for entry in os.listdir(processed_root):
-            prefix, _, suffix = entry.partition('_')
-            if prefix == 'enem' and suffix.isdigit() and \
-                    os.path.exists(os.path.join(processed_root, entry, PARQUET_FILENAME)):
-                years.append(int(suffix))
-    return YearsResponse(years=sorted(years))
+    response.headers["Cache-Control"] = CACHE_CONTROL_YEARS
+    return YearsResponse(years=repo.available_years())
 
 
 @app.get("/api/v1/enem/{year}/stats", response_model=StatsResponse, responses=ERROR_RESPONSES)
-def get_enem_stats(year: YearParam):
+def get_enem_stats(year: YearParam, repo: RepositoryDep, response: Response):
     """Retorna estatísticas gerais do ENEM para um ano específico."""
-    parquet_path = get_parquet_path(year)
-
-    try:
-        with enem_connection(parquet_path) as con:
-            # Query usa apenas o nome da view (literal fixo), sem interpolação de variáveis externas
-            query = """
-                SELECT
-                    COUNT(*) as total_inscritos,
-                    AVG(CAST(MEDIA_GERAL AS FLOAT)) as media_geral,
-                    AVG(CAST(NU_NOTA_REDACAO AS FLOAT)) as media_redacao,
-                    AVG(CAST(NU_NOTA_MT AS FLOAT)) as media_matematica
-                FROM enem_data
-                WHERE MEDIA_GERAL > 0
-            """
-            result = con.execute(query).fetchone()
-
-        return StatsResponse(
-            total_inscritos=result[0],
-            media_geral=round(result[1], 2) if result[1] else 0.0,
-            media_redacao=round(result[2], 2) if result[2] else 0.0,
-            media_matematica=round(result[3], 2) if result[3] else 0.0
-        )
-    except Exception:
-        logger.exception(f"Erro interno ao consultar stats do ano {year}")
-        raise HTTPException(status_code=500, detail="Erro interno do servidor ao processar os dados.")
+    stats = repo.get_stats(year)
+    response.headers["Cache-Control"] = CACHE_CONTROL_DATA
+    return StatsResponse(**asdict(stats))
 
 
 @app.get("/api/v1/enem/{year}/states", response_model=list[StateRanking], responses=ERROR_RESPONSES)
 def get_enem_states_ranking(
     year: YearParam,
+    repo: RepositoryDep,
+    response: Response,
     limit: Annotated[int, Query(ge=1, le=MAX_UF_LIMIT, description="Número de estados a retornar")] = 10,
 ):
     """Retorna o ranking de médias gerais por estado (UF)."""
-    parquet_path = get_parquet_path(year)
-
-    try:
-        with enem_connection(parquet_path) as con:
-            # Query usa apenas o nome da view e bind param para LIMIT — sem interpolação externa
-            query = """
-                SELECT
-                    SG_UF_ESC as uf,
-                    AVG(CAST(MEDIA_GERAL AS FLOAT)) as media,
-                    COUNT(*) as total_alunos
-                FROM enem_data
-                WHERE SG_UF_ESC IS NOT NULL AND MEDIA_GERAL > 0
-                GROUP BY SG_UF_ESC
-                ORDER BY media DESC
-                LIMIT ?
-            """
-            rows = con.execute(query, [limit]).fetchall()
-
-        return [StateRanking(uf=uf, media=round(media, 2), total_alunos=total) for uf, media, total in rows]
-    except Exception:
-        logger.exception(f"Erro interno ao consultar states do ano {year} com limit {limit}")
-        raise HTTPException(status_code=500, detail="Erro interno do servidor ao buscar ranking.")
+    ranking = repo.get_state_ranking(year, limit)
+    response.headers["Cache-Control"] = CACHE_CONTROL_DATA
+    return [StateRanking(**asdict(entry)) for entry in ranking]
 
 
 if __name__ == "__main__":

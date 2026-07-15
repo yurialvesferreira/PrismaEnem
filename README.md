@@ -39,7 +39,7 @@ O script cuida de tudo: gera dados mock do ENEM, processa via DuckDB, e sobe tod
 |--------|-----------|
 | **Ingestão** | Download automatizado dos ZIPs do INEP **ou** geração de dados mock para testes sem baixar ~4GB |
 | **ETL (DuckDB)** | Pipeline de transformação que lê os CSVs brutos e gera arquivos `.parquet` otimizados para consultas analíticas |
-| **API (FastAPI)** | Endpoints REST para anos disponíveis (`/years`), estatísticas nacionais (`/stats`) e ranking por estado (`/states`), com documentação automática em `/docs` |
+| **API (FastAPI)** | Endpoints REST para anos disponíveis (`/years`), estatísticas nacionais (`/stats`) e ranking por estado (`/states`), com documentação automática em `/docs`, camada de repositório testável e cache em memória dos agregados |
 | **Dashboard (Next.js)** | Interface Dark Mode com comparativo da sua escola vs. média nacional e ranking de UFs via Chart.js |
 | **JupyterLab** | Container pronto para análise exploratória nos Parquets gerados, sem configuração adicional |
 
@@ -71,6 +71,12 @@ Next.js Dashboard     ← Consome a API, renderiza visualizações
 **Por que DuckDB + Parquet?**
 - DuckDB executa queries analíticas in-process, sem servidor — ideal para ambientes single-node.
 - Parquet reduz o tamanho dos dados em até 10x comparado ao CSV e acelera queries em colunas específicas.
+
+**Design da API (padrões aplicados):**
+- **Repository Pattern** (`src/api/repository.py`): todo o acesso a DuckDB/Parquet fica isolado dos endpoints HTTP, que conhecem apenas o contrato do repositório e suas exceções de domínio.
+- **Dependency Injection** (FastAPI `Depends`): o repositório é injetado nas rotas e substituível nos testes via `app.dependency_overrides` — os endpoints são testados sem tocar em disco.
+- **Exception handlers globais**: o contrato de erro (404/500 sem vazamento de detalhes internos) é centralizado, não repetido por endpoint.
+- **Cache de agregados**: como os dados são imutáveis após o ETL, os agregados são cacheados em memória por `(consulta, ano, mtime)` — reprocessar um ano invalida o cache automaticamente — e as respostas levam `Cache-Control` para clientes e proxies.
 
 ---
 
@@ -105,7 +111,8 @@ PrismaEnem/
 │   ├── processing/
 │   │   └── process_data.py   # Pipeline ETL: CSV → DuckDB → Parquet
 │   ├── api/
-│   │   └── main.py           # API FastAPI com endpoints /stats e /states
+│   │   ├── main.py           # Rotas FastAPI, DI e exception handlers
+│   │   └── repository.py     # Acesso a dados (DuckDB/Parquet) com cache
 │   └── frontend/
 │       ├── .env.local.example # Template de variáveis para o Next.js
 │       └── src/
@@ -114,6 +121,9 @@ PrismaEnem/
 │
 ├── config/
 │   └── settings.py           # Central de configurações via Pydantic + .env
+│
+├── tests/
+│   └── test_api.py           # Testes dos endpoints (repo fake) e do repositório (Parquet real)
 │
 ├── docs/                      # Assets de documentação
 ├── quick_start.sh             # Script end-to-end: mock → ETL → Docker up
@@ -190,6 +200,11 @@ python src/processing/process_data.py --year 2023
 **4. Subir toda a infraestrutura:**
 ```bash
 docker-compose up --build
+```
+
+**5. Rodar os testes:**
+```bash
+pytest tests/
 ```
 
 ---
